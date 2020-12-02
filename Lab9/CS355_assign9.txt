@@ -1,0 +1,381 @@
+Name - Chandrawanshi Mangesh Shivaji
+Roll No. - 1801CS16
+// is used to add description/assumption comments 
+
+// Sign in as root
+mysql -u root -p
+- Password
+
+// For creating required tables
+use dblab;
+
+Task 1
+For this assignment, initially create the following tables.
+ 
+// account <anum number(5),bname varchar(20),balance int> /*anum is the primary key*/
+// As SQL 8.0 does not support number datatype I have taken datatype as decimal which is pretty much similar to it
+->
+
+create table account(
+	anum decimal(5),
+	bname varchar(20),
+	balance int,
+	constraint account_pk primary key (anum)
+);
+
+// custAcc<anum number(5),cname varchar(20)> /*anum and cname combination is the primary key. */
+// As SQL 8.0 does not support number datatype I have taken datatype as decimal which is pretty much similar to it
+->
+
+create table custAcc(
+	anum decimal(5),
+	cname varchar(20),
+	constraint custAcc_pk primary key (anum,cname)
+);
+
+Task 2
+Now perform the followings-
+
+1. Create a procedure [name procAccDummyData] which takes one integer value (N) as input parameter and insert N
+dummy records in account table. The dummy records must satisfy the constraints used to define the table.
+->
+
+delimiter $$
+
+// Procedure
+
+create procedure procAccDummyData(in n int)
+begin
+
+	declare anum1 decimal(5);
+	declare bname1 varchar(20);
+	declare balance1 int;
+	declare iter int;
+	declare chk int;
+
+	set iter = 0;
+
+	while(iter < n) do
+
+		set anum1 = floor(99999*rand() + 1);
+		set bname1 = concat('branch_',substring('ABCDEFGHIJKLMNOPQRSTUVWXYZ',floor(26*rand() + 1),1));
+		set balance1 = floor(10000000*rand() + 1);
+
+		select exists (
+			select anum 
+			from account 
+			where anum = anum1
+		)	into chk;
+
+		if (chk = 0) then 
+			insert into account 
+				values(anum1,bname1,balance1);
+			set iter = iter + 1;
+		end if;
+
+	end while; 
+end $$
+
+delimiter ;
+
+// Sample Procedure Call 
+call procAccDummyData(50);
+
+// Result 
+mysql> select * from account;
++-------+----------+---------+
+| anum  | bname    | balance |
++-------+----------+---------+
+|  2349 | branch_F |  821307 |
+|  3792 | branch_A | 9742716 |
+|  4962 | branch_M | 3315653 |
+|  5397 | branch_D | 5932560 |
+|  5448 | branch_C | 3171608 |
+|  6399 | branch_F | 8585495 |
+|  6666 | branch_Y | 5839988 |
+| 12872 | branch_O | 4760286 |
+| 15866 | branch_F | 6412713 |
+| 16170 | branch_K | 6022362 |
+| 16958 | branch_W | 7572508 |
+| 22666 | branch_W | 6278030 |
+| 22745 | branch_U | 3268627 |
+| 22879 | branch_E | 1303441 |
+| 26785 | branch_G | 4600313 |
+| 27100 | branch_V | 2411081 |
+| 29746 | branch_N | 7867034 |
+| 31978 | branch_C | 4423869 |
+| 32102 | branch_Z | 8929499 |
+| 32607 | branch_H | 3729281 |
+| 33647 | branch_S | 5081110 |
+| 34060 | branch_Z | 8655951 |
+| 39554 | branch_J | 7178727 |
+| 42431 | branch_Y | 3699427 |
+| 43005 | branch_Q | 8395173 |
+| 44667 | branch_C |  587466 |
+| 46092 | branch_D | 2277198 |
+| 49196 | branch_N | 1254941 |
+| 50195 | branch_D | 2632383 |
+| 51319 | branch_U | 3914193 |
+| 52969 | branch_M | 7853173 |
+| 53601 | branch_T | 1732370 |
+| 54201 | branch_I |  237109 |
+| 55115 | branch_B | 7309949 |
+| 55210 | branch_L | 5147205 |
+| 55434 | branch_X | 7784693 |
+| 59742 | branch_M | 5446294 |
+| 59850 | branch_V | 2956307 |
+| 66244 | branch_T | 6955109 |
+| 66284 | branch_X | 4420937 |
+| 71911 | branch_J | 5884267 |
+| 75878 | branch_Z | 6596061 |
+| 77231 | branch_E | 5751754 |
+| 77308 | branch_D | 3911904 |
+| 81855 | branch_E | 3941632 |
+| 82568 | branch_O | 3326125 |
+| 85473 | branch_M | 8555006 |
+| 89468 | branch_S | 8566099 |
+| 97089 | branch_N | 7239840 |
+| 97725 | branch_X | 5104814 |
++-------+----------+---------+
+50 rows in set (0.00 sec)
+
+
+2. Create a withdraw function [name funWithdraw] which takes anum and amount as input parameters and check
+whether suficient balance is there (from account relation) or not and accordingly it subtracts amount from the
+balance and update the balance. If the amount can be deducted then withdraw function returns the final balance
+otherwise it returns -1.
+->
+
+delimiter $$
+
+// Function
+
+create function funWithdraw(anum1 decimal(5),amount int)
+returns int
+deterministic
+begin
+
+	declare retval int;
+	declare chk1 int;
+	declare balance1 int;
+	set chk1 = 0;
+
+	select exists(
+		select anum
+		from account 
+		where anum = anum1
+	)	into chk1;
+
+	if(chk1 = 0) then 
+		set retval = -1;
+	else 
+		
+		select balance into balance1
+		from account
+		where anum = anum1;
+
+		if (amount > balance1) then
+			set retval = -1;
+		else
+			set retval = balance1 - amount;
+
+			update account 
+				set balance = retval
+				where anum = anum1;
+				
+		end if;
+
+	end if;
+	
+	return retval;
+end$$
+
+delimiter ;
+
+// Sample function calls
+
+// valid withdrawl
+mysql> select funWithdraw(2349,500);
++-----------------------+
+| funWithdraw(2349,500) |
++-----------------------+
+|                820807 |
++-----------------------+
+1 row in set (0.01 sec)
+
+// anum doesnot exists
+mysql> select funWithdraw(1234,5000);
++------------------------+
+| funWithdraw(1234,5000) |
++------------------------+
+|                     -1 |
++------------------------+
+1 row in set (0.00 sec)
+
+// amount greater than balance
+mysql> select funWithdraw(2349,900000);
++--------------------------+
+| funWithdraw(2349,900000) |
++--------------------------+
+|                       -1 |
++--------------------------+
+1 row in set (0.00 sec)
+
+3. Now create a trigger (use the standard naming convention i.e. [activation time] [table name] [trigger event], ) to
+perform each of the followings
+
+a) Before insertion operation into custAcc table, check whether the anum value exists in the account relation. If
+anum exists in account table then insert it into the custAcc table otherwise print an appropriate error message
+->
+
+delimiter $$
+
+// Trigger
+
+create trigger before_custAcc_insert 
+before insert 
+on custAcc for each row
+
+begin
+
+	declare errorMessage varchar(255);
+	declare chk1 int;
+	set chk1 = 0;
+	set errorMessage = CONCAT('Insertion Aborted : The new anum value ',new.anum,' is not present in account relation');
+
+	select exists (
+		select anum 
+		from account 
+		where account.anum = new.anum
+	)	into chk1;
+
+	if(chk1 = 0) then 
+		signal sqlstate '45000'
+			set message_text = errorMessage;
+	end if;
+
+end $$
+
+delimiter ;
+
+// Sample Insertions
+
+mysql> insert into custAcc
+    ->    values(2349,'Abhijeet');
+Query OK, 1 row affected (0.01 sec)
+
+mysql> select * from custAcc;
++------+----------+
+| anum | cname    |
++------+----------+
+| 2349 | Abhijeet |
++------+----------+
+1 row in set (0.00 sec)
+
+mysql> insert into custAcc
+    ->    values(3609,'Harsh');
+ERROR 1644 (45000): Insertion Aborted : The new anum value 3609 is not present in account relation
+
+
+b) For each update operation on balance attribute of account relation, store the corresponding old balance value in
+a separate table already created as accBalanceUpdate <anum number(5), balance number(6), dou date(date of update), tou
+timestamp > /*dou is date of update and tou is time of update*/
+Now, run the funWithdraw for several examples and show how they impact on the accBalanceUpdate table.
+
+-> 
+
+// accBalanceUpdate <anum number(5), balance int, dou date(date of update), tou timestamp > /*dou
+is date of update and tou is time of update*/
+// As SQL 8.0 does not support number datatype I have taken datatype as decimal which is pretty much similar to it
+
+create table accBalanceUpdate(
+	anum decimal(5),
+	balance int,
+	dou date,
+	tou timestamp
+);
+
+delimiter $$
+
+// Trigger 
+
+create trigger after_account_update 
+after update 
+on account for each row
+
+begin 
+	insert into accBalanceUpdate
+		values(old.anum,old.balance,curdate(),current_time());
+end $$
+
+delimiter ;
+
+mysql> select funWithdraw(2349,5000);
++------------------------+
+| funWithdraw(2349,5000) |
++------------------------+
+|                 815807 |
++------------------------+
+1 row in set (0.02 sec)
+
+mysql> select funWithdraw(1234,800);
++-----------------------+
+| funWithdraw(1234,800) |
++-----------------------+
+|                    -1 |
++-----------------------+
+1 row in set (0.00 sec)
+
+mysql> select funWithdraw(44667,10000);
++--------------------------+
+| funWithdraw(44667,10000) |
++--------------------------+
+|                   577466 |
++--------------------------+
+1 row in set (0.01 sec)
+
+mysql> select funWithdraw(56231,9500);
++-------------------------+
+| funWithdraw(56231,9500) |
++-------------------------+
+|                      -1 |
++-------------------------+
+1 row in set (0.00 sec)
+
+mysql> select funWithdraw(2349,9500);
++------------------------+
+| funWithdraw(2349,9500) |
++------------------------+
+|                 806307 |
++------------------------+
+1 row in set (0.01 sec)
+
+mysql> select funWithdraw(2349,900000);
++--------------------------+
+| funWithdraw(2349,900000) |
++--------------------------+
+|                       -1 |
++--------------------------+
+1 row in set (0.00 sec)
+
+mysql> select * from accBalanceUpdate;
++-------+---------+------------+---------------------+
+| anum  | balance | dou        | tou                 |
++-------+---------+------------+---------------------+
+|  2349 |  820807 | 2020-11-06 | 2020-11-06 01:06:15 |
+| 44667 |  587466 | 2020-11-06 | 2020-11-06 01:06:15 |
+|  2349 |  815807 | 2020-11-06 | 2020-11-06 01:06:15 |
++-------+---------+------------+---------------------+
+3 rows in set (0.00 sec)
+
+Observations : 
+
+// Entries only corresponding to anum values present in account tables and sufficient account balance are displayed in
+ accBalanceUpdate
+// For all other withdrawls either the anum value is not present in account table or the amount to be withdrawn is
+ grater than balance therefore they are not present in accBalanceUpdate
+
+
+
+
+

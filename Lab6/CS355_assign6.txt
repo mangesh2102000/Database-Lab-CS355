@@ -1,0 +1,451 @@
+Name - Chandrawanshi Mangesh Shivaji
+Roll No. - 1801CS16
+// is used to add description/assumption comments 
+
+// Setting up Permissions To use load infile instructions in later part (Task A)
+
+// Sign in as root
+mysql -u root -p
+- Password
+
+SET GLOBAL local_infile=1;
+
+// Exit as root
+quit
+
+// Sign in as scot with load infile instructions allowed
+
+mysql --local-infile=1 -u scot -p 
+- Password
+
+// Task 1 :
+
+// Create RobbersGang database
+create database RobbersGang;
+
+use RobbersGang;
+
+// Create banks table with primary key (b_name,b_city) 
+
+create table banks(
+    b_name varchar(30),
+    b_city varchar(20),
+    no_of_accounts int unsigned,
+    sec_level varchar(20),
+    constraint banks_pk primary key (b_name,b_city) );
+
+// Check 
+desc banks;
+
+// Load Data into banks table
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/banks.txt' INTO TABLE banks 
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n';
+
+// Check 
+select * from banks;
+
+// Create robbers table with primary key (r_id) which is added intentionally 
+
+create table robbers(
+    r_name varchar(30),
+    r_age smallint unsigned,
+    no_of_prison_yrs smallint unsigned,
+    constraint prisoner_age check (no_of_prison_yrs < r_age) );
+
+// Check 
+desc robbers;
+
+// Load Data into robbers table
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/robbers.txt' INTO TABLE robbers 
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n';
+
+// Add unique key r_id to solve the problem of same rname, auto_increment initializes already present values in the table with unique ids
+
+alter table robbers
+    add r_id smallint auto_increment primary key;
+
+// Check 
+desc robbers
+
+
+// Create robberies table with primary key (b_name,b_city,DoR)
+// I have assumed that at the same day there will be no multiple robberies for the same bank in the same city, there can be robberies at same bank,city at different dates
+
+create table robberies(
+    b_name varchar(30),
+    b_city varchar(20),
+    DoR date,
+    amount double,
+    constraint robberies_pk primary key (b_name,b_city,DoR),
+    constraint robberies_fk1 foreign key (b_name,b_city) references banks(b_name,b_city)
+     );
+
+// Check 
+desc robberies
+
+// Load Data into robberies table
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/robberies.txt' INTO TABLE robberies 
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n';
+
+
+// Create Plans table with primary key (b_name,b_city,DoPR)
+
+create table plans(
+	b_name varchar(30),
+    b_city varchar(20),
+    DoPR date,
+    no_of_robbers int unsigned,
+    constraint plans_pk primary key (b_name,b_city,DoPR),
+    constraint plans_fk1 foreign key (b_name,b_city) references banks(b_name,b_city)
+	);
+
+// Check 
+desc plans;
+
+// Load Data into plans table
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/plans.txt' INTO TABLE plans 
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n';
+
+
+// Create hasaccounts table with primary key (r_id,b_name,b_city) and other foreign keys
+
+create table hasaccounts(
+	r_name varchar(30),
+    b_name varchar(30),
+    b_city varchar(20),
+    constraint hasaccounts_fk1 foreign key (b_name,b_city) references banks(b_name,b_city)
+    );
+
+// Check 
+desc hasaccounts;
+
+// Load Data into hasaccounts table
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/hasaccounts.txt' INTO TABLE hasaccounts 
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n';
+
+
+alter table hasaccounts 	
+	add r_id smallint;
+
+alter table hasaccounts
+	add constraint hasaccounts_fk2 foreign key (r_id) references robbers(r_id);
+
+update hasaccounts inner join
+	robbers on (
+	hasaccounts.r_name = robbers.r_name)
+	set hasaccounts.r_id = robbers.r_id;
+
+alter table hasaccounts
+	add constraint hasaccounts_pk1 primary key (r_id,b_name,b_city);
+
+// Now there is no use of r_name so we can delete it 
+alter table hasaccounts
+	drop column r_name;
+
+//Check 
+select * from hasaccounts;
+
+// Create accomplices table with primary key (r_id,b_name,b_city,DoR) and other foreign keys
+
+create table accomplices(
+	r_name varchar(30),
+    b_name varchar(30),
+    b_city varchar(20),
+    DoR date,
+    share double,
+    constraint accomplices_fk1 foreign key (b_name,b_city,DoR) references robberies(b_name,b_city,DoR),
+    constraint share_not_negative check(share >= 0)
+    );
+
+// Check 
+desc accomplices;
+
+// Load Data into accomplices table
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/accomplices.txt' INTO TABLE accomplices 
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n';
+
+alter table accomplices 	
+	add r_id smallint;
+
+alter table accomplices
+	add constraint accomplices_fk2 foreign key (r_id) references robbers(r_id);
+
+update accomplices inner join
+	robbers on (
+	accomplices.r_name = robbers.r_name)
+	set accomplices.r_id = robbers.r_id;
+
+alter table accomplices
+	add constraint accomplices_pk1 primary key (r_id,b_name,b_city,DoR);
+
+// Now there is no use of r_name so we can delete it 
+alter table accomplices
+	drop column r_name;
+
+//Check 
+select * from accomplices;
+
+
+// Create hasskills table with primary key (r_id,sk_id) and refer them as foreign keys to respective parent tables
+
+create table hasskills(
+	r_name varchar(30),
+    sk_name varchar(30),
+    pf_rank smallint unsigned,
+    grade varchar(5)
+    );
+
+// Check 
+desc hasskills;
+
+// Load Data into hasskills table
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/hasskills.txt' INTO TABLE hasskills 
+FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\n';
+
+// Create new table for skills
+	
+create table skills(
+	sk_name varchar(30)
+);
+
+insert into skills
+	select distinct sk_name from hasskills;
+
+alter table skills
+    add sk_id smallint auto_increment primary key;
+
+alter table hasskills 	
+	add r_id smallint;
+
+alter table hasskills
+	add constraint hasskills_fk1 foreign key (r_id) references robbers(r_id);
+
+update hasskills inner join
+	robbers on (
+	hasskills.r_name = robbers.r_name)
+	set hasskills.r_id = robbers.r_id;
+
+alter table hasskills 	
+	add sk_id smallint;
+
+alter table hasskills
+	add constraint hasskills_fk2 foreign key (sk_id) references skills(sk_id);
+
+update hasskills inner join
+	skills on (
+	hasskills.sk_name = skills.sk_name)
+	set hasskills.sk_id = skills.sk_id;
+
+
+alter table hasskills
+	add constraint hasskills_pk1 primary key (r_id,sk_id);
+
+// Now there is no use of r_name,sk_name so we can delete it 
+alter table hasskills
+	drop column r_name;
+
+alter table hasskills
+	drop column sk_name;
+
+//Check 
+select * from hasskills;
+
+// All relations and their order of tuples 
+
+// banks(b_name(PK),b_city(PK),no_of_accounts,sec_level)
+// robbers(r_name,r_age,no_of_prison_yrs,r_id(PK))
+// robberies(b_name(PK,FK),b_city(PK,FK),DoR(PK),amount) 
+// plans(b_name(PK,FK),b_city(PK,FK),DoPR(PK),no_of_robbers)
+// hasaccounts(b_name(PK,FK),b_city(PK,FK),r_id(PK,FK))
+// accomplices(b_name(PK,FK),b_city(PK,FK),DoR(PK,FK),share,r_id(PK,FK))
+// skills(sk_id(PK),sk_name)
+// hasskills(pf_rank,grade,r_id(PK,FK),sk_id(PK,FK))
+
+// So, all the tables are updated with their primary keys, foreign keys and database schema is designed
+// End of Task1
+
+// Task 2 : Create views for each of the following queries
+
+1. v1: to list the robbers who have spent more than 4 years in jail and are less than 40 years.
+
+// Creation of view
+create view v1 as 
+select * 
+from robbers
+where r_age < 40 and no_of_prison_yrs > 4;
+
+// Display view
+select * from v1;
+
+2. v2: to list the robbers who were not involved in robbery between 2005 and 2010
+
+// Creation of view
+create view v2 as
+select * 
+from robbers
+where r_id not in(
+	select r_id
+	from accomplices
+	where year(DoR) >= 2005 and year(DoR) <= 2010 	
+);
+
+// Display view
+select * from v2;
+
+3. v3: to list for each skill the senior most robber (in terms of age)
+
+// Creation of view
+create view v3 as
+select r_id,r_name,sk_name,sk_id
+from robbers,skills
+where (r_id,sk_id) in (
+	select r_id,sk_id
+	from hasskills temp
+	where r_id in (
+		select r_id from robbers
+		where r_age in (
+			select max(r_age) from robbers
+			where r_id in (
+				select r_id from hasskills
+				where sk_id = temp.sk_id
+			)
+		)
+	)
+);
+
+// Display view
+select * from v3;
+
+
+4. v4: to list the banks which were robbed more than once
+
+// Creation of view
+create view v4 as
+select b_name,b_city,count(*) as no_of_robberies
+	from robberies
+	group by b_name,b_city
+	having no_of_robberies > 1;
+
+// Display view
+select * from v4;
+
+
+5. v5: to list the recent most five robberies in Chicago city
+
+// Creation of view
+create view v5 as
+select *
+	from robberies
+	where b_city = 'Chicago' 
+	order by DoR desc
+	limit 5;
+
+
+// Display view
+select * from v5;
+
+
+6. v6: to list the robbers and the total amount they have robbed so far.
+
+// Creation of view
+create view v6 as
+select r_id,r_name,total_amount
+from 
+	(
+	select accomplices.r_id,robbers.r_name,SUM(share) as total_amount
+		from accomplices,robbers
+		where accomplices.r_id = robbers.r_id
+		group by r_id
+
+	UNION ALL
+
+	select r_id,r_name, 0 as total_amount
+		from robbers
+		where r_id not in (
+		select distinct r_id
+		from accomplices
+		)
+	) temp ;
+
+// Display view
+select * from v6;
+
+
+7. v7: to list the robbers and the number of skills they have
+
+// Creation of view
+create view v7 as
+select hasskills.r_id,r_name,COUNT(*)
+from hasskills,robbers
+where hasskills.r_id = robbers.r_id
+group by r_id;
+
+// Display view
+select * from v7;
+
+
+8. v8: to list the banks that may be robbed in next 3 months from the current date
+// I have listed multiple possibilities for same bank,city also if they exist (on different dates)
+
+// Creation of view
+create view v8 as
+select * 
+from plans
+where DoPR >= curdate() and DoPR <= adddate(curdate(),interval 3 month);
+
+// Display view
+select * from v8;
+
+
+9. v9: to list the suspected robbers who may rob in next 3 months. Assume that suspected robbers are those who have
+accounts at the same bank branch.
+
+// Creation of view
+create view v9 as
+select r_id,r_name 
+from robbers
+where r_id in (
+		select r_id 
+		from hasaccounts
+		where (b_name,b_city) in (
+			select b_name,b_city
+			from plans
+			where DoPR >= curdate() and DoPR <= adddate(curdate(),interval 3 month)
+		)
+	);
+
+
+// Display view
+select * from v9;
+
+10. v10: for each bank, provide a summary of security level and the number of times it was robbed so far.
+
+// Creation of view
+create view v10 as
+select b_name,b_city,sec_level,no_of_robberies
+from
+	(
+	select banks.b_name,banks.b_city,banks.sec_level,COUNT(*) as no_of_robberies
+	from banks,robberies
+	where banks.b_name = robberies.b_name and banks.b_city = robberies.b_city
+	group by robberies.b_name,robberies.b_city
+
+	UNION ALL 
+
+	select banks.b_name,banks.b_city,banks.sec_level,0 as no_of_robberies
+	from banks
+	where (banks.b_name,banks.b_city) not in (
+		select distinct b_name,b_city
+		from robberies
+	)
+) temp;
+
+// Display view
+select * from v10;

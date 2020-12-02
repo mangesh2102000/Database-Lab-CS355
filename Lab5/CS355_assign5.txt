@@ -1,0 +1,224 @@
+Name - Chandrawanshi Mangesh Shivaji
+Roll No. - 1801CS16
+// is used to add description/assumption comments 
+
+
+// Setting up Permissions To use load infile instructions in later part (Task A)
+
+// Sign in as root
+mysql -u root -p
+- Password
+
+SET GLOBAL local_infile=1;
+
+// Exit as root
+quit
+
+// Sign in as scot with load infile instructions allowed
+
+mysql --local-infile=1 -u scot -p 
+- Password
+
+// Use existing database
+use dblab;
+
+Task A) :
+
+// Add DoB attribute to Suppliers
+alter table Suppliers
+	add DoB date;
+
+// Add DoS attribute to SP
+alter table SP
+	add DoS date;
+
+// Created sup_data.txt file with following entries
+
+S001,Aaryavarat,Dehradun,aarya@gmail.com,1999-08-03
+S002,Abhijeet,Digras,abhi@yahoo.com,2000-05-30
+S003,Aman,Gwalior,amon12@gmail.com,2001-03-02
+S004,Anirbun,Siliguri,nandi@yahoo.com,2000-12-24
+S005,Pranay,Delhi,pkg321@hotmail.com,2001-08-21
+S006,Kashish,Dehradun,kashi@yahoo.com,1985-08-03
+S007,Rishi,Digras,ris123@gmail.com,1986-05-15
+S008,Harsh,Gwalior,cache56@gmail.com,2001-03-15
+S009,Aparsh,Siliguri,apars98@yahoo.com,2000-12-02
+S010,Ritwiz,Delhi,rstuv@hotmail.com,2001-08-13
+
+and placed the file into C:\ProgramData\MySQL\MySQL Server 8.0\Uploads  directory
+
+// Load data in sup_data.txt to Suppliers 
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/sup_data.txt' INTO TABLE Suppliers 
+FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+
+// Created prod_data.txt file with following entries
+
+P001,bat,5,2018-05-15,500
+P002,ball,15,2019-02-12,150
+P003,mat,8,2018-09-23,300
+P004,table,18,2019-09-26,1500
+P005,chair,12,2018-09-16,900
+P006,laptop,25,2020-01-15,1500
+P007,speakers,28,2019-12-30,800
+P008,earphones,35,2020-05-15,80
+P009,bottle,50,2020-06-16,150
+P010,mouse,43,2018-07-19,100
+
+and placed the file into C:\ProgramData\MySQL\MySQL Server 8.0\Uploads  directory
+
+// Load data in prod_data.txt to Products 
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/prod_data.txt' INTO TABLE Products 
+FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+
+
+// This is not mentioned in assignment but for testing purpose, I have added content to SP table
+
+// Created sp_data.txt file with following entries
+
+S001,P001,150,2019-02-28
+S001,P002,500,2019-03-15
+S004,P001,250,2019-03-20
+S004,P003,300,2019-04-05
+S002,P004,100,2019-12-26
+S003,P006,150,2020-04-15
+S008,P005,100,2020-06-16
+S009,P008,100,2020-07-15
+S010,P010,150,2019-07-19
+S007,P010,180,2019-08-15
+S002,P008,50,2020-09-15
+
+and placed the file into C:\ProgramData\MySQL\MySQL Server 8.0\Uploads  directory
+
+// Load data in sp_data.txt to SP 
+
+LOAD DATA LOCAL INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/sp_data.txt' INTO TABLE SP 
+FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n';
+
+Task B) :
+
+#1) Find the details of the youngest supplier.
+->
+select *
+from Suppliers
+where DoB in (
+	select MAX(DoB)
+	from Suppliers
+	);
+
+#2) Find the SID of the suppliers who are less than 30 years old.
+->
+select SID
+from Suppliers
+where timestampdiff(year,DoB,sysdate()) < 30;
+
+
+#3) Show the average age of the suppliers from each city.
+->
+// Here, I have considered only year part as age of the supplier like 
+// if there is a Supplier with exact age as 18 yrs 11 months 15 days his/her age is considered as 18
+// Similarly if there is Supplier with exact age as 25 yrs 2 months 20 days his/her age is considered as 25
+
+select City,SUM(timestampdiff(year,DoB,sysdate()))/COUNT(*) as AVG_AGE
+from Suppliers
+group by City;
+
+
+#4) Find the name of the suppliers who have supplied products in the year 2020.
+->
+select distinct SName
+from Suppliers,SP
+where Suppliers.SID = SP.SID and year(SP.DoS) = 2020;
+
+
+#5) Find the name of the suppliers who have supplied products after 2019-08-15.
+->
+select distinct SName 
+from Suppliers,SP
+where Suppliers.SID = SP.SID and SP.DoS > '2019-08-15';
+
+
+#6) Find the name of the most recently supplied product
+->
+select PName 
+from Products,SP
+where Products.PID = SP.PID and SP.DoS in
+	(	
+		select MAX(DoS)
+		from SP
+	);
+
+
+#7) Find the name of the suppliers who have supplied atleast two products and one product is supplied within
+30 days of supply of previous product.
+->
+select SName 
+from Suppliers
+where SID in
+	(
+		select SQ1.SID
+		from ( select * from SP where SID in (select SID from SP group by (SID) having COUNT(PID) >= 2)) SQ1
+		INNER JOIN 
+			 ( select * from SP where SID in (select SID from SP group by (SID) having COUNT(PID) >= 2)) SQ2
+		ON SQ1.SID = SQ2.SID
+		where datediff(SQ1.DoS,SQ2.DoS) <= 30 and datediff(SQ1.DoS,SQ2.DoS) > 0
+	);
+
+
+#8) Find the products which are not sold within 1 year of date of manufacture
+->
+// If the product is sold by any of the supplier within 1 year it is not include in the query result.
+Also, year is considered to be of 365 days
+
+// Submitted 
+Select * 
+from Products
+where PID not in
+	(
+		select distinct SP.PID
+		from Products,SP
+		where datediff(DoM,DoS) <= 365
+	);
+
+// WRONG ANSWER, YOU DID CARTESIAN PRODUCT OF THE TWO TABLES "SP" AND "PRODUCTS"
+
+// Corrected 
+Select * 
+from Products
+where PID not in
+	(
+		select distinct SP.PID
+		from Products,SP
+		where Products.PID = SP.PID and datediff(DoM,DoS) <= 365
+	);
+
+
+#9) Find the PID, WarrantyPeriod, StarRating of each product. Here, StarRating is a derived
+attribute and is calculated as ‘*’ if the warranty period is in between 0 and 9, ‘**’ if the warranty
+period is in between 10 and 19, ‘***’ if the warranty period is in between 20 and 29, and so on.
+->
+select PID, WarrantyPeriod, REPEAT('*',(WarrantyPeriod + 10) div 10 ) as StarRating
+from Products;
+
+
+#10) Create a view to show the oldest SID of each city.
+->
+// Creation of view
+
+create view OLDEST_SID_CITY as
+select City,SID from Suppliers
+where (City,DoB) in
+(
+	select City,min(DoB)
+	from Suppliers
+	group by City
+);
+
+// Show created view 
+
+select * from OLDEST_SID_CITY;
+
+
+
+

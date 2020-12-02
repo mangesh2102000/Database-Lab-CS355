@@ -1,0 +1,214 @@
+Name - Chandrawanshi Mangesh Shivaji
+Roll No. - 1801CS16
+// is used to add description/assumption comments 
+
+// Sign in as root
+mysql -u root -p
+- Password
+
+
+Task 1:
+
+// Create a database named dbMidTerm
+create database dbMidTerm;
+
+// Create a new user
+create user 'sachin'@'localhost' identified by 'september';
+
+// Grant privileges to all tables dbMidTerm 
+grant all privileges on dbMidTerm.* to 'sachin'@'localhost';
+
+// exit
+\q
+
+// Sign as new user (sachin)
+mysql -u sachin -p
+- Password (september)
+
+// Use the dbMidTerm database
+use dbMidTerm;
+
+create table Customers(
+    Cust_ID smallint,
+    Gender char(1) NOT NULL,
+    DoB date,
+    constraint Valid_gender check ( Gender = 'M' or Gender = 'F'),
+    constraint Customers_pk primary key (Cust_ID) );
+
+create table Cars(
+    Car_ID char(5),
+    Company varchar(20) NOT NULL,
+    Price int,
+    constraint Cars_pk primary key (Car_ID) );
+
+create table Purchase(
+	Cust_ID smallint,
+	Car_ID char(5),
+    DoP date,
+    constraint Purchase_pk primary key (Cust_ID,Car_ID),	
+    constraint Purchase_fk1 foreign key (Cust_ID) references Customers(Cust_ID),
+    constraint Purchase_fk2 foreign key (Car_ID) references Cars(Car_ID)  );
+
+insert into Customers
+	values(1,'F','1999-08-03'),
+	(2,'F','2000-05-30'),
+	(3,'M','2001-03-02'),
+	(4,'M','2000-12-24'),
+	(5,'F','2001-08-21'),
+	(6,'M','1985-08-03'),
+	(7,'M','1986-05-15'),
+	(8,'F','2001-03-15'),
+	(9,'M','2000-12-02'),
+	(10,'F','2001-08-13');
+
+insert into Cars
+	values('C001','Audi',1000000),
+	('C002','Audi',1500000),
+	('C003','BMW',2000000),
+	('C004','Honda',400000),
+	('C005','Hyundai',700000),
+	('C006','BMW',200000),
+	('C007','Honda',800000),
+	('C008','Tata',100000),
+	('C009','Tata',200000),
+	('C010','Kia',300000),
+	('C011','Acuraa',500000)
+
+insert into Purchase
+	values(1,'C001','2018-05-15'),
+	(2,'C002','2019-02-12'),
+	(3,'C001','2018-09-23'),
+	(4,'C002','2019-12-24'),
+	(5,'C001','2018-09-16'),
+	(2,'C010','2020-01-15'),
+	(7,'C005','2017-05-15'),
+	(9,'C011','2018-02-12'),
+	(10,'C004','2018-07-19'),
+	(6,'C005','2020-06-16'),
+	(8,'C003','2020-01-15'),
+	(4,'C004','2017-06-26'),
+	(9,'C006','2018-02-12'),
+	(10,'C007','2018-08-13'),
+	(1,'C008','2020-06-16');
+
+Task 2:
+
+// Write queries using MySQL for performing the followings
+
+// 1. Find the car company which has maximum number of cars of price greater than 200000
+
+select Company,Count(*) as cnt
+from Cars
+where Price > 200000
+group by Company
+having cnt in (
+	select max(cnt) from
+	(
+		select Count(*) as cnt
+		from Cars
+		where Price > 200000
+		group by Company
+	) as tmp
+);
+
+// 2. Find all the details of the oldest customer
+
+// Oldest customer means customer who has bought car at the earliest datewise, not by age of customer
+
+select distinct Customers.Cust_ID,Gender,DoB
+from Customers,Purchase
+where Customers.Cust_ID = Purchase.Cust_ID and Purchase.DoP in
+	(
+		select min(DoP)
+		from Purchase
+	); 
+
+// 3. Find the total number of cars purchased by each gender
+
+select Gender,COUNT(*) as cnt
+from Customers,Purchase
+where Customers.Cust_ID = Purchase.Cust_ID
+group by Gender;
+
+// 4. For each car company, find the car(s) (Car ID) that was/were sold most recently.
+
+select distinct Company,c1.Car_ID
+from Cars as c1,Purchase
+where c1.Car_ID = Purchase.Car_ID and Purchase.DoP in
+	(
+		select max(DoP)
+		from Cars,Purchase
+		where Cars.Company = c1.Company and Cars.Car_ID = Purchase.Car_ID
+	);
+
+
+5. Find the name of the car companies with exactly two ‘a’s.
+
+select distinct Company
+from Cars 
+where Company LIKE '%a%a%' and Company NOT LIKE '%a%a%a%';
+
+
+6. For each car company, compute a star-rating by checking how many cars it sold. If it has sold more than equal to 5
+cars then mention 5 star, if it has sold 1 to 5 cars then mention 3 stars otherwise mention 1 star.
+
+select Company,Cars.Car_ID,
+CASE
+    WHEN COUNT(*) >=5 THEN '*****'
+    WHEN COUNT(*) >=1 THEN '***'
+    ELSE '*'
+END AS StarRating
+from Cars,Purchase
+where Cars.Car_ID=Purchase.Car_ID
+group by Company;
+
+7. Find the details of the customers who have purchased the car on their date of birth (same day and month of DoB
+and DoP)
+
+select distinct Customers.Cust_ID,Gender,DoB
+from Customers,Purchase
+where Customers.Cust_ID = Purchase.Cust_ID and DAY(DoP) = DAY(DoB) and MONTH(DoP) = MONTH(DoB);
+
+8. Find the name of the customers who have more than one car (without using count function)
+
+select *
+from Customers
+where Cust_ID in 
+	(
+		select distinct p1.Cust_ID
+		from Purchase as p1 JOIN Purchase as p2
+		on p1.Cust_ID = p2.Cust_ID and p1.Car_ID != p2.Car_ID
+	);
+
+9. Find the Cust ID(s) who own(s) the most expensive Honda’s (car company) car (without using max function).
+
+select Cust_ID 
+from Purchase
+where Car_ID =
+	(
+		(
+			select Car_ID
+			from Cars
+			where Company = 'Honda'
+		)
+		order by price desc
+		Limit 1
+	);
+
+10. Create a view with name unsoldCars to list the car companies and number of cars that are currently not sold yet.
+
+// Companies with all cars sold are not included
+
+create view unsoldCars as
+select Company,Count(*) as cnt
+from Cars
+where Car_ID not in
+	(
+		select distinct Cars.Car_ID 
+		from Cars INNER JOIN Purchase
+		on Cars.Car_ID = Purchase.Car_ID
+	)
+group by Company;
+
+select * from unsoldCars;
+

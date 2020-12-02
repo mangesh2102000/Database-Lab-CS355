@@ -1,0 +1,10 @@
+S001,Aaryavarat,Dehradun,aarya@gmail.com,1999-08-03
+S002,Abhijeet,Digras,abhi@yahoo.com,2000-05-30
+S003,Aman,Gwalior,amon12@gmail.com,2001-03-02
+S004,Anirbun,Siliguri,nandi@yahoo.com,2000-12-24
+S005,Pranay,Delhi,pkg321@hotmail.com,2001-08-21
+S006,Kashish,Dehradun,kashi@yahoo.com,1985-08-03
+S007,Rishi,Digras,ris123@gmail.com,1986-05-15
+S008,Harsh,Gwalior,cache56@gmail.com,2001-03-15
+S009,Aparsh,Siliguri,apars98@yahoo.com,2000-12-02
+S010,Ritwiz,Delhi,rstuv@hotmail.com,2001-08-13
