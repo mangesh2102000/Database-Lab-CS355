@@ -1,0 +1,156 @@
+Name - Chandrawanshi Mangesh Shivaji
+Roll No. - 1801CS16
+// is used to add description comments 
+
+// Sign in as scot
+mysql -u scot -p 
+- Password
+
+// Use existing database
+use dblab;
+
+// Delete duplicate entries in Suppliers if there are any
+create table Suppliers_copy LIKE Suppliers;
+
+insert into Suppliers_copy
+	select distinct * from Suppliers;
+
+drop table Suppliers;
+
+rename table Suppliers_copy to Suppliers; 
+
+// Create a primary key constraint using SID attribute to Suppliers table
+alter table Suppliers
+    add constraint Suppliers_pk primary key (SID);
+
+// Insert 10 more records in Suppliers table
+insert into Suppliers
+	values(11,'Balbeer','Lukhnow'),
+    (12,'Sunny','Mumbai'),
+    (13,'Aryan','Jaipur'),
+    (14,'Apoorv','Barabanki'),
+    (15,'Hrishabh','Gaya'),
+    (16,'Kamal','Noida'),
+    (17,'Suyog','Nanded'),
+    (18,'Siddhant','Latur'),
+    (19,'Swaraj','Ahmedpur'),
+    (20,'Ashu','Pune');
+
+// Delete duplicate entries in Products if there are any 
+create table Products_copy LIKE Products;
+
+insert into Products_copy
+	select distinct * from Products;
+
+drop table Products;
+
+rename table Products_copy to Products; 
+
+// Create a primary key constraint using PID attribute to Products table
+alter table Products
+	add constraint Products_pk primary key (PID);
+
+// Insert 10 more records in Products table
+insert into Products
+	values(11,'table',4),
+	(12,'chair',2),
+	(13,'bag',1),
+	(14,'television',3),
+	(15,'car',2),
+	(16,'bike',1),
+	(17,'spectacles',1),
+	(18,'AC',4),
+	(19,'pillow',2),
+	(20,'adapter',1);
+
+// Remove all entries of SP table
+delete from SP;
+
+// Add an attribute Qty of smallint type in SP
+alter table SP
+	add Qty smallint;
+
+// Create a primary key in table SP using attributes SID and PID
+alter table SP
+	add constraint SP_pk primary key (SID, PID);
+
+// Create a foreign key in table SP using attribute SID and refernce it to Suppliers table
+alter table SP
+	add constraint SP_fk1 foreign key (SID) references Suppliers (SID);
+
+// Create a foreign key in table SP using attribute PID and refernce it to Products table
+alter table SP
+	add constraint SP_fk2 foreign key (PID) references Products (PID);
+
+// Insert 15 new entries into SP table in form (SID,PID,Qty)
+insert into SP
+	values(1,2,100),(2,3,100),(3,4,200),(4,3,200),(5,15,250),(6,20,150),(7,18,200),(8,12,50),(9,14,250),(10,2,200),(11,6,150),(12,7,100),(13,8,50),(14,16,80),(15,2,80);
+
+
+// List of Suppliers who are from Patna and Mumbai cities
+select *
+	from Suppliers
+	where City IN ('Patna','Mumbai');
+
+
+// Name the products which have warranty period from 2-4 years
+select PName
+	from Products
+	where WarrantyPeriod BETWEEN 2 and 4;
+
+// From SP table, check the total number of times PID=’2’product has been supplied. (As I have used only numbers in PID, I am using PID = '2' insted of 'P2')
+select COUNT(*)
+	from SP
+	where PID = '2';
+
+// for given question 
+select COUNT(*)
+	from SP
+	where PID = 'P2';
+
+// Total Quantity of PID = '2' supplied
+select SUM(Qty)
+    from SP
+    where PID = '2';
+
+// Name of the suppliers who have atleast two ‘a’s in their names
+select SName
+	from Suppliers
+	where SName LIKE '%a%a%';
+
+// Name of the products which end with ‘e’ or ‘E’
+select PName
+	from Products
+	where PName LIKE '%e';
+
+	OR (both will work as it is case insensitive)
+
+select PName
+	from Products
+	where PName LIKE '%E';
+
+	OR 
+
+select PName 
+	from Products
+	where REGEXP_LIKE(PName,'e$');
+
+	OR
+
+select PName 
+	from Products
+	where REGEXP_LIKE(PName,'E$');
+
+// Add one more attribute DoM or Date of Manufacture in Products table. 
+alter table Products
+	add DoM date;
+
+// Check values corresponding to DoM Column in Products Tables
+select DoM from Products;
+
+// Update DoM with relevant dates ( Here, I have updated the whole column with 27 Aug 2020 )
+update Products
+set DoM = '2020-08-27';
+
+// exit
+\q
